@@ -21,13 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -48,14 +42,7 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.support.lob.DefaultLobHandler;
 import org.springframework.jdbc.support.lob.LobCreator;
 import org.springframework.jdbc.support.lob.LobHandler;
-import org.springframework.session.DelegatingIndexResolver;
-import org.springframework.session.FindByIndexNameSessionRepository;
-import org.springframework.session.FlushMode;
-import org.springframework.session.IndexResolver;
-import org.springframework.session.MapSession;
-import org.springframework.session.PrincipalNameIndexResolver;
-import org.springframework.session.SaveMode;
-import org.springframework.session.Session;
+import org.springframework.session.*;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -128,10 +115,12 @@ import org.springframework.util.StringUtils;
  *
  * @author Vedran Pavic
  * @author Craig Andrews
+ * @author Amadej Kastelic
  * @since 2.2.0
  */
 public class JdbcIndexedSessionRepository
-		implements FindByIndexNameSessionRepository<JdbcIndexedSessionRepository.JdbcSession> {
+		implements FindByIndexNameSessionRepository<JdbcIndexedSessionRepository.JdbcSession>,
+		CreateWithIdSessionRepository<JdbcIndexedSessionRepository.JdbcSession> {
 
 	/**
 	 * The default name of database table used by Spring Session to store sessions.
@@ -408,7 +397,12 @@ public class JdbcIndexedSessionRepository
 
 	@Override
 	public JdbcSession createSession() {
-		MapSession delegate = new MapSession();
+		return this.createSession(null);
+	}
+
+	@Override
+	public JdbcSession createSession(String id) {
+		MapSession delegate = Optional.ofNullable(id).map(MapSession::new).orElse(new MapSession());
 		if (this.defaultMaxInactiveInterval != null) {
 			delegate.setMaxInactiveInterval(Duration.ofSeconds(this.defaultMaxInactiveInterval));
 		}
